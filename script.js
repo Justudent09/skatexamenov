@@ -23,7 +23,7 @@ const data = [
             { text: "2. Интерполирование сплайнами", page: 85 }
         ]
     }
-    // И так далее для 4 и 5 темы...
+    // Для тем 4 и 5 добавьте аналогичные данные
 ];
 
 const topicSelect = document.getElementById('topicSelect');
@@ -31,18 +31,30 @@ const questionsContainer = document.getElementById('questionsContainer');
 const pdfViewer = document.getElementById('pdfViewer');
 const placeholder = document.getElementById('placeholder');
 
-const PDF_NAME = "Лекции по ЧМ (3курс,2поток).pdf";
+// ⚠️ Убедитесь, что файл находится в той же папке, что и HTML
+// или укажите правильный путь (например, "pdf/Лекции по ЧМ.pdf")
+const PDF_NAME = "ChM.pdf";
+
+// Заполняем выпадающий список темами
+data.forEach((topic, index) => {
+    const option = document.createElement('option');
+    option.value = index;
+    option.textContent = `${index + 1}. ${topic.title}`;
+    topicSelect.appendChild(option);
+});
 
 topicSelect.addEventListener('change', (e) => {
     const topicIndex = e.target.value;
-    renderQuestions(topicIndex);
+    if (topicIndex === "" || topicIndex === null) return;
+    renderQuestions(parseInt(topicIndex));
 });
 
 function renderQuestions(index) {
     questionsContainer.innerHTML = '';
-    const questions = data[index].questions;
+    const topic = data[index];
+    if (!topic) return;
 
-    questions.forEach(q => {
+    topic.questions.forEach(q => {
         const div = document.createElement('div');
         div.className = 'question-item';
         div.innerText = q.text;
@@ -54,6 +66,9 @@ function renderQuestions(index) {
 function openPdf(page) {
     placeholder.style.display = 'none';
     pdfViewer.style.display = 'block';
-    // Добавляем параметр страницы к пути PDF
-    pdfViewer.src = `${encodeURIComponent(PDF_NAME)}#page=${page}`;
+    
+    // Кодируем имя файла для URL и добавляем параметр страницы
+    // Используем encodeURIComponent для корректной обработки русских символов и пробелов
+    const encodedFileName = encodeURIComponent(PDF_NAME);
+    pdfViewer.src = `${encodedFileName}#page=${page}`;
 }
