@@ -1,3 +1,4 @@
+// Данные лекций
 const data = [
     {
         title: "Численные методы алгебры",
@@ -23,19 +24,26 @@ const data = [
             { text: "2. Интерполирование сплайнами", page: 85 }
         ]
     }
-    // Для тем 4 и 5 добавьте аналогичные данные
+    // Добавьте 4 и 5 тему по такому же принципу
 ];
 
 const topicSelect = document.getElementById('topicSelect');
 const questionsContainer = document.getElementById('questionsContainer');
-const pdfViewer = document.getElementById('pdfViewer');
 const placeholder = document.getElementById('placeholder');
+const pdfContainer = document.getElementById('pdfContainer');
+const pdfCanvas = document.getElementById('pdfCanvas');
+const pageNumInfo = document.getElementById('pageNumInfo');
+const prevPageBtn = document.getElementById('prevPage');
+const nextPageBtn = document.getElementById('nextPage');
 
-// ⚠️ Убедитесь, что файл находится в той же папке, что и HTML
-// или укажите правильный путь (например, "pdf/Лекции по ЧМ.pdf")
-const PDF_NAME = "ChM.pdf";
+let pdfDoc = null;
+let currentPage = 1;
+let totalPages = 0;
 
-// Заполняем выпадающий список темами
+// Имя PDF файла (положите ChM.pdf в ту же папку, что и index.html)
+const PDF_URL = "ChM.pdf";
+
+// Заполняем темы
 data.forEach((topic, index) => {
     const option = document.createElement('option');
     option.value = index;
@@ -63,12 +71,58 @@ function renderQuestions(index) {
     });
 }
 
-function openPdf(page) {
+function openPdf(pageNum) {
+    // Показываем контейнер с PDF, скрываем плейсхолдер
     placeholder.style.display = 'none';
-    pdfViewer.style.display = 'block';
+    pdfContainer.style.display = 'flex';
     
-    // Кодируем имя файла для URL и добавляем параметр страницы
-    // Используем encodeURIComponent для корректной обработки русских символов и пробелов
-    const encodedFileName = encodeURIComponent(PDF_NAME);
-    pdfViewer.src = `${encodedFileName}#page=${page}`;
+    // Загружаем PDF
+    pdfjsLib.getDocument(PDF_URL).promise.then(function(doc) {
+        pdfDoc = doc;
+        totalPages = doc.numPages;
+        currentPage = pageNum;
+        
+        // Обновляем навигацию
+        updatePageButtons();
+        
+        // Рендерим нужную страницу
+        renderPage(currentPage);
+    }).catch(function(error) {
+        console.error("Ошибка загрузки PDF:", error);
+        pdfContainer.innerHTML = `<div style="color: red; padding: 20px; text-align: center;">
+            Ошибка загрузки PDF файла. Проверьте, что файл "${PDF_URL}" находится в той же папке.
+        </div>`;
+    });
+}
+
+function renderPage(pageNum) {
+    pdfDoc.getPage(pageNum).then(function(page) {
+        // Масштабируем под ширину окна
+        const viewport = page.getViewport({ scale: 1.5 });
+        const canvasContext = pdfCanvas.getContext('2d');
+        
+        pdfCanvas.width = viewport.width;
+        pdfCanvas.height = viewport.height;
+        
+        page.render({
+            canvasContext: canvasContext,
+            viewport: viewport
+        });
+        
+        pageNumInfo.textContent = `Страница ${pageNum} из ${totalPages}`;
+    });
+}
+
+function updatePageButtons() {
+    prevPageBtn.onclick = () => {
+        if (currentPage <= 1) return;
+        currentPage--;
+        renderPage(currentPage);
+    };
+    
+    nextPageBtn.onclick = () => {
+        if (currentPage >= totalPages) return;
+        currentPage++;
+        renderPage(currentPage);
+    };
 }
