@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Лекции по ЧМ</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <h2>Численные методы</h2>
+            
+            <div class="select-group">
+                <label>Выберите тему:</label>
+                <select id="topicSelect">
+                    <option value="" disabled selected>-- Тема --</option>
+                    <option value="0">1. Численные методы алгебры</option>
+                    <option value="1">2. Решение нелинейных уравнений</option>
+                    <option value="2">3. Интерполяция и приближение</option>
+                    <option value="3">4. Численное интегрирование ОДУ</option>
+                    <option value="4">5. Разностные методы</option>
+                </select>
+            </div>
+
+            <div id="questionsContainer" class="questions-list">
+                </div>
+        </aside>
+
+        <main class="viewer">
+            <div id="placeholder" class="placeholder">
+                <p>Выберите вопрос, чтобы открыть лекцию</p>
+            </div>
+            <iframe id="pdfViewer" src="" frameborder="0"></iframe>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
