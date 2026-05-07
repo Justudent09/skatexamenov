@@ -24,9 +24,11 @@ const data = [
             { text: "2. Интерполирование сплайнами", page: 85 }
         ]
     }
-    // Добавьте 4 и 5 тему по такому же принципу
 ];
 
+const sidebar = document.getElementById('sidebar');
+const openSidebarBtn = document.getElementById('openSidebarBtn');
+const closeSidebarBtn = document.getElementById('closeSidebarBtn');
 const topicSelect = document.getElementById('topicSelect');
 const questionsContainer = document.getElementById('questionsContainer');
 const placeholder = document.getElementById('placeholder');
@@ -40,8 +42,16 @@ let pdfDoc = null;
 let currentPage = 1;
 let totalPages = 0;
 
-// Имя PDF файла (положите ChM.pdf в ту же папку, что и index.html)
 const PDF_URL = "ChM.pdf";
+
+// Управление сайдбаром
+openSidebarBtn.addEventListener('click', () => {
+    sidebar.classList.remove('closed');
+});
+
+closeSidebarBtn.addEventListener('click', () => {
+    sidebar.classList.add('closed');
+});
 
 // Заполняем темы
 data.forEach((topic, index) => {
@@ -66,50 +76,53 @@ function renderQuestions(index) {
         const div = document.createElement('div');
         div.className = 'question-item';
         div.innerText = q.text;
-        div.onclick = () => openPdf(q.page);
+        div.onclick = () => {
+            openPdf(q.page);
+            // На мобильных автоматически скрываем меню после выбора
+            if (window.innerWidth <= 768) {
+                sidebar.classList.add('closed');
+            }
+        };
         questionsContainer.appendChild(div);
     });
 }
 
 function openPdf(pageNum) {
-    // Показываем контейнер с PDF, скрываем плейсхолдер
     placeholder.style.display = 'none';
     pdfContainer.style.display = 'flex';
     
-    // Загружаем PDF
     pdfjsLib.getDocument(PDF_URL).promise.then(function(doc) {
         pdfDoc = doc;
         totalPages = doc.numPages;
         currentPage = pageNum;
         
-        // Обновляем навигацию
         updatePageButtons();
-        
-        // Рендерим нужную страницу
         renderPage(currentPage);
     }).catch(function(error) {
-        console.error("Ошибка загрузки PDF:", error);
+        console.error("Ошибка:", error);
         pdfContainer.innerHTML = `<div style="color: red; padding: 20px; text-align: center;">
-            Ошибка загрузки PDF файла. Проверьте, что файл "${PDF_URL}" находится в той же папке.
+            ❌ Ошибка: не найден файл "${PDF_URL}"<br>
+            Убедитесь, что он в той же папке
         </div>`;
     });
 }
 
 function renderPage(pageNum) {
     pdfDoc.getPage(pageNum).then(function(page) {
-        // Масштабируем под ширину окна
-        const viewport = page.getViewport({ scale: 1.5 });
-        const canvasContext = pdfCanvas.getContext('2d');
+        // Автомасштабирование под ширину экрана
+        const container = pdfContainer;
+        const scale = (container.clientWidth - 40) / page.getViewport({ scale: 1 }).width;
+        const viewport = page.getViewport({ scale: Math.min(scale, 2.5) });
         
         pdfCanvas.width = viewport.width;
         pdfCanvas.height = viewport.height;
         
         page.render({
-            canvasContext: canvasContext,
+            canvasContext: pdfCanvas.getContext('2d'),
             viewport: viewport
         });
         
-        pageNumInfo.textContent = `Страница ${pageNum} из ${totalPages}`;
+        pageNumInfo.textContent = `${pageNum} / ${totalPages}`;
     });
 }
 
@@ -126,3 +139,10 @@ function updatePageButtons() {
         renderPage(currentPage);
     };
 }
+
+// При изменении размера окна перерисовываем страницу
+window.addEventListener('resize', () => {
+    if (pdfDoc && currentPage) {
+        renderPage(currentPage);
+    }
+});
