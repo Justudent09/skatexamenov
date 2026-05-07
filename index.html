@@ -9,8 +9,11 @@
 </head>
 <body>
     <div class="app-container">
-        <aside class="sidebar">
-            <h2>Численные методы</h2>
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h2>Численные методы</h2>
+                <button id="closeSidebarBtn" class="close-btn">✕</button>
+            </div>
 
             <div class="select-group">
                 <label>Выберите тему:</label>
@@ -19,20 +22,24 @@
                 </select>
             </div>
 
-            <div id="questionsContainer" class="questions-list">
-                </div>
+            <div id="questionsContainer" class="questions-list"></div>
         </aside>
 
         <main class="viewer">
+            <div class="viewer-header">
+                <button id="openSidebarBtn" class="menu-btn">☰ Меню</button>
+            </div>
+            
             <div id="placeholder" class="placeholder">
                 <p>Выберите вопрос, чтобы открыть лекцию</p>
             </div>
-            <div id="pdfContainer" style="display: none; overflow: auto; height: 100%;">
-                <canvas id="pdfCanvas" style="width: 100%; height: auto;"></canvas>
-                <div id="pageNav" style="padding: 10px; text-align: center; background: #1e293b;">
-                    <button id="prevPage" style="margin-right: 10px;">◀ Назад</button>
+            
+            <div id="pdfContainer" style="display: none;">
+                <canvas id="pdfCanvas"></canvas>
+                <div id="pageNav">
+                    <button id="prevPage">◀ Назад</button>
                     <span id="pageNumInfo">Страница 1</span>
-                    <button id="nextPage" style="margin-left: 10px;">Вперед ▶</button>
+                    <button id="nextPage">Вперед ▶</button>
                 </div>
             </div>
         </main>
