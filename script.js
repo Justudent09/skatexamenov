@@ -1,4 +1,4 @@
-// Данные лекций
+// Данные лекций (твои обновленные данные)
 const data = [
     {
         title: "Численные методы алгебры",
@@ -52,9 +52,8 @@ const data = [
     }
 ];
 
-// Элементы DOM
 const sidebar = document.getElementById('sidebar');
-const overlay = document.getElementById('overlay'); // Не забудь добавить <div id="overlay" class="overlay"></div> в HTML
+const overlay = document.getElementById('overlay');
 const openSidebarBtn = document.getElementById('openSidebarBtn');
 const closeSidebarBtn = document.getElementById('closeSidebarBtn');
 const topicSelect = document.getElementById('topicSelect');
@@ -69,27 +68,21 @@ const nextPageBtn = document.getElementById('nextPage');
 let pdfDoc = null;
 let currentPage = 1;
 let totalPages = 0;
+let isRendering = false; // Флаг для предотвращения наложения рендеров
+let renderPending = null; // Очередь для рендеринга
 const PDF_URL = "ChM.pdf";
 
-// --- УПРАВЛЕНИЕ МЕНЮ ---
-
+// --- МЕНЮ ---
 function toggleMenu(isOpen) {
-    if (isOpen) {
-        sidebar.classList.remove('closed');
-        if (overlay) overlay.classList.add('active');
-    } else {
-        sidebar.classList.add('closed');
-        if (overlay) overlay.classList.remove('active');
-    }
+    sidebar.classList.toggle('closed', !isOpen);
+    if (overlay) overlay.classList.toggle('active', isOpen);
 }
 
-openSidebarBtn.addEventListener('click', () => toggleMenu(true));
-closeSidebarBtn.addEventListener('click', () => toggleMenu(false));
-if (overlay) overlay.addEventListener('click', () => toggleMenu(false));
+openSidebarBtn.onclick = () => toggleMenu(true);
+closeSidebarBtn.onclick = () => toggleMenu(false);
+if (overlay) overlay.onclick = () => toggleMenu(false);
 
-// --- РАБОТА С ДАННЫМИ ---
-
-// Заполняем селект темами
+// --- ДАННЫЕ ---
 data.forEach((topic, index) => {
     const option = document.createElement('option');
     option.value = index;
@@ -97,62 +90,65 @@ data.forEach((topic, index) => {
     topicSelect.appendChild(option);
 });
 
-topicSelect.addEventListener('change', (e) => {
-    const topicIndex = e.target.value;
-    if (topicIndex !== "") renderQuestions(parseInt(topicIndex));
-});
+topicSelect.onchange = (e) => {
+    const idx = e.target.value;
+    if (idx !== "") renderQuestionsList(parseInt(idx));
+};
 
-function renderQuestions(index) {
+function renderQuestionsList(index) {
     questionsContainer.innerHTML = '';
     const topic = data[index];
-    if (!topic) return;
-
     topic.questions.forEach(q => {
         const div = document.createElement('div');
         div.className = 'question-item';
         div.innerText = q.text;
         div.onclick = () => {
             openPdf(q.page);
-            toggleMenu(false); // Закрываем меню после выбора (важно для мобилок)
+            toggleMenu(false);
         };
         questionsContainer.appendChild(div);
     });
 }
 
-// --- РАБОТА С PDF ---
-
+// --- PDF КОРЕ-ЛОГИКА ---
 async function openPdf(pageNum) {
     placeholder.style.display = 'none';
     pdfContainer.style.display = 'flex';
-    
+
     try {
         if (!pdfDoc) {
-            pdfDoc = await pdfjsLib.getDocument(PDF_URL).promise;
+            // Инициализация PDFJS (если библиотека еще не настроена)
+            const loadingTask = pdfjsLib.getDocument(PDF_URL);
+            pdfDoc = await loadingTask.promise;
             totalPages = pdfDoc.numPages;
         }
         currentPage = pageNum;
-        renderPage(currentPage);
+        queueRenderPage(currentPage);
     } catch (error) {
-        console.error("Ошибка загрузки PDF:", error);
-        pdfContainer.innerHTML = `<div style="color: #ef4444; padding: 20px; text-align: center;">
-            ❌ Ошибка: файл "${PDF_URL}" не найден.
-        </div>`;
+        console.error("PDF Error:", error);
+        pdfContainer.innerHTML = `<div style="color:red; padding:20px;">Ошибка: убедитесь, что файл ChM.pdf лежит в папке с сайтом.</div>`;
+    }
+}
+
+function queueRenderPage(num) {
+    if (isRendering) {
+        renderPending = num;
+    } else {
+        renderPage(num);
     }
 }
 
 async function renderPage(pageNum) {
-    if (!pdfDoc) return;
-
+    isRendering = true;
     const page = await pdfDoc.getPage(pageNum);
     const context = pdfCanvas.getContext('2d');
-    
-    // Расчет масштаба под ширину экрана
-    const containerWidth = pdfContainer.clientWidth - 20;
-    const viewportDefault = page.getViewport({ scale: 1 });
-    const scale = containerWidth / viewportDefault.width;
+
+    // Настройка масштаба
+    const viewportWidth = pdfContainer.clientWidth - 30;
+    const initialViewport = page.getViewport({ scale: 1 });
+    const scale = viewportWidth / initialViewport.width;
     const viewport = page.getViewport({ scale: scale });
 
-    // Улучшение четкости (HiDPI / Retina)
     const outputScale = window.devicePixelRatio || 1;
     pdfCanvas.width = Math.floor(viewport.width * outputScale);
     pdfCanvas.height = Math.floor(viewport.height * outputScale);
@@ -164,33 +160,33 @@ async function renderPage(pageNum) {
         transform: outputScale !== 1 ? [outputScale, 0, 0, outputScale, 0, 0] : null,
         viewport: viewport
     };
-    
+
     await page.render(renderContext).promise;
-    
+    isRendering = false;
+
+    // Если во время рендера прилетел запрос на новую страницу - рисуем её
+    if (renderPending !== null) {
+        renderPage(renderPending);
+        renderPending = null;
+    }
+
     pageNumInfo.textContent = `${pageNum} / ${totalPages}`;
-    pdfContainer.scrollTo(0, 0); // Скролл вверх при смене страницы
+    pdfContainer.scrollTo(0, 0);
 }
 
-// Навигация кнопками
+// Навигация
 prevPageBtn.onclick = () => {
-    if (currentPage > 1) {
-        currentPage--;
-        renderPage(currentPage);
-    }
+    if (currentPage <= 1) return;
+    currentPage--;
+    queueRenderPage(currentPage);
 };
 
 nextPageBtn.onclick = () => {
-    if (currentPage < totalPages) {
-        currentPage++;
-        renderPage(currentPage);
-    }
+    if (currentPage >= totalPages) return;
+    currentPage++;
+    queueRenderPage(currentPage);
 };
 
-// Перерисовка при изменении размера окна (адаптивность)
-let resizeTimeout;
-window.addEventListener('resize', () => {
-    clearTimeout(resizeTimeout);
-    resizeTimeout = setTimeout(() => {
-        if (pdfDoc) renderPage(currentPage);
-    }, 200);
-});
+window.onresize = () => {
+    if (pdfDoc) queueRenderPage(currentPage);
+};
