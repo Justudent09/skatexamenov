@@ -31,7 +31,7 @@ const questionsContainer = document.getElementById('questionsContainer');
 const pdfViewer = document.getElementById('pdfViewer');
 const placeholder = document.getElementById('placeholder');
 
-const PDF_NAME = "Лекции по ЧМ (3курс, 2 поток).pdf";
+const PDF_NAME = "Лекции по ЧМ (3курс,2поток).pdf";
 
 topicSelect.addEventListener('change', (e) => {
     const topicIndex = e.target.value;
