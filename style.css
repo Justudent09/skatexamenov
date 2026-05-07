@@ -56,8 +56,8 @@ body {
 .overlay.active { display: block; }
 
 .sidebar-header {
-    margin-top: calc(var(--tg-content-safe-area-inset-top) + var(--tg-safe-area-inset-top));
     padding: 24px 20px;
+    padding-top: calc(var(--tg-content-safe-area-inset-top) + var(--tg-safe-area-inset-top));
     display: flex;
     justify-content: space-between;
     align-items: center;
